@@ -23,8 +23,6 @@ def _bn_relu(input):
 
 
 def _conv_bn_relu(**conv_params):
-    """Helper to build a conv -> BN -> relu block
-    """
     filters = conv_params["filters"]
     kernel_size = conv_params["kernel_size"]
     strides = conv_params.setdefault("strides", (1, 1))
@@ -100,7 +98,6 @@ def basic_block(filters, init_strides=(1, 1), is_first_block_of_first_layer=Fals
     def f(input):
 
         if is_first_block_of_first_layer:
-            # don't repeat bn->relu since we just did bn->relu->maxpool
             conv1 = Conv2D(filters=filters, kernel_size=(3, 3),
                            strides=init_strides,
                            padding="same",
