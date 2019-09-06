@@ -18,8 +18,6 @@ from keras import backend as K
 
 
 def _bn_relu(input):
-    """Helper to build a BN -> relu block
-    """
     norm = BatchNormalization(axis=CHANNEL_AXIS)(input)
     return Activation("relu")(norm)
 
@@ -45,9 +43,6 @@ def _conv_bn_relu(**conv_params):
 
 
 def _bn_relu_conv(**conv_params):
-    """Helper to build a BN -> relu -> conv block.
-    This is an improved scheme proposed in http://arxiv.org/pdf/1603.05027v2.pdf
-    """
     filters = conv_params["filters"]
     kernel_size = conv_params["kernel_size"]
     strides = conv_params.setdefault("strides", (1, 1))
@@ -66,8 +61,6 @@ def _bn_relu_conv(**conv_params):
 
 
 def _shortcut(input, residual):
-    """Adds a shortcut between input and residual block and merges them with "sum"
-    """
     # Expand channels of shortcut to match residual.
     # Stride appropriately to match residual (width, height)
     # Should be int if network architecture is correctly configured.
@@ -91,8 +84,6 @@ def _shortcut(input, residual):
 
 
 def _residual_block(block_function, filters, repetitions, is_first_layer=False):
-    """Builds a residual block with repeating bottleneck blocks.
-    """
     def f(input):
         for i in range(repetitions):
             init_strides = (1, 1)
@@ -106,9 +97,6 @@ def _residual_block(block_function, filters, repetitions, is_first_layer=False):
 
 
 def basic_block(filters, init_strides=(1, 1), is_first_block_of_first_layer=False):
-    """Basic 3 X 3 convolution blocks for use on resnets with layers <= 34.
-    Follows improved proposed scheme in http://arxiv.org/pdf/1603.05027v2.pdf
-    """
     def f(input):
 
         if is_first_block_of_first_layer:
@@ -129,12 +117,6 @@ def basic_block(filters, init_strides=(1, 1), is_first_block_of_first_layer=Fals
 
 
 def bottleneck(filters, init_strides=(1, 1), is_first_block_of_first_layer=False):
-    """Bottleneck architecture for > 34 layer resnet.
-    Follows improved proposed scheme in http://arxiv.org/pdf/1603.05027v2.pdf
-
-    Returns:
-        A final conv layer of filters * 4
-    """
     def f(input):
 
         if is_first_block_of_first_layer:
@@ -199,14 +181,12 @@ class ResnetBuilder(object):
         filters = 32
         for i, r in enumerate(repetitions):
             block = _residual_block(block_fn, filters=filters, repetitions=r, is_first_layer=(i == 0))(block)
-            # filters = int(filters * 2)
 
         # Last activation
         block = _bn_relu(block)
 
         # Classifier block
         block_shape = K.int_shape(block)
-        # flatten1 = GlobalAveragePooling2D()(block)
         pool2 = AveragePooling2D(pool_size=(block_shape[ROW_AXIS], block_shape[COL_AXIS]), strides=(1, 1))(block)
 
         flatten1 = Flatten()(pool2)
@@ -219,7 +199,3 @@ class ResnetBuilder(object):
     @staticmethod
     def build_resnet(input_shape, num_outputs):
         return ResnetBuilder.build(input_shape, num_outputs, basic_block, [2, 2, 2, 2])
-
-    # @staticmethod
-    # def build_resnet(input_shape, num_outputs):
-    #     return ResnetBuilder.build(input_shape, num_outputs, basic_block, [3, 4, 6, 3])
